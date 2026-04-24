@@ -16,7 +16,10 @@ class ProbeResult:
     details: dict[str, Any] = field(default_factory=dict)
 
 
-def _build_headers(auth_type: AuthType, auth_config: dict[str, Any]) -> tuple[dict[str, str], httpx.BasicAuth | None]:
+def build_headers_and_auth(
+    auth_type: AuthType,
+    auth_config: dict[str, Any],
+) -> tuple[dict[str, str], httpx.BasicAuth | None]:
     headers: dict[str, str] = {}
     auth: httpx.BasicAuth | None = None
 
@@ -51,7 +54,7 @@ async def probe_datasource(
     extra_config: dict[str, Any],
     timeout_seconds: int,
 ) -> ProbeResult:
-    headers, auth = _build_headers(auth_type, auth_config)
+    headers, auth = build_headers_and_auth(auth_type, auth_config)
     verify_tls = extra_config.get("verify_tls", True)
 
     async with httpx.AsyncClient(
@@ -88,4 +91,3 @@ async def probe_datasource(
             )
 
     return ProbeResult(False, f"Unsupported datasource type: {datasource_type.value}")
-

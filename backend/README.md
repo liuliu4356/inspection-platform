@@ -42,6 +42,7 @@ The backend service definition is also included in `docker-compose.yml` if you w
 - Datasource CRUD plus connectivity test
 - Inspection rule CRUD plus version snapshots
 - Manual inspection job creation plus task run materialization
+- Inline execution for Prometheus and Elasticsearch inspection runs
 - Alembic scaffold with initial schema migration
 - Health endpoint
 
@@ -56,4 +57,52 @@ The backend service definition is also included in `docker-compose.yml` if you w
 - `GET /api/v1/jobs`
 - `GET /api/v1/jobs/{id}`
 - `GET /api/v1/jobs/{id}/runs`
+- `POST /api/v1/jobs/{id}/execute`
 - `POST /api/v1/jobs/{id}/cancel`
+- `POST /api/v1/runs/{id}/execute`
+- `GET /api/v1/runs/{id}/findings`
+
+## Threshold examples
+
+Prometheus rule threshold example:
+
+```json
+{
+  "query_config": {
+    "query": "100 - (avg(rate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+    "step": "60s"
+  },
+  "threshold_config": {
+    "aggregation": "max",
+    "operator": "gt",
+    "warning": 75,
+    "critical": 90,
+    "suggestion": "Check host CPU saturation and hot processes."
+  }
+}
+```
+
+Elasticsearch rule threshold example:
+
+```json
+{
+  "query_config": {
+    "index": "logs-*",
+    "query": {
+      "bool": {
+        "filter": [
+          { "term": { "log.level": "error" } }
+        ]
+      }
+    },
+    "size": 0
+  },
+  "threshold_config": {
+    "aggregation": "hits_total",
+    "operator": "gt",
+    "warning": 10,
+    "critical": 50,
+    "suggestion": "Review recent error spikes and related deployments."
+  }
+}
+```

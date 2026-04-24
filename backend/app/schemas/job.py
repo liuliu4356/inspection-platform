@@ -44,6 +44,26 @@ class TaskRunRead(ORMBaseModel):
     finished_at: datetime | None
 
 
+class FindingRead(ORMBaseModel):
+    id: UUID
+    run_id: UUID
+    finding_type: str
+    finding_key: str | None
+    title: str
+    message: str | None
+    severity: SeverityLevel
+    metric_name: str | None
+    labels_json: dict[str, Any]
+    evidence_json: dict[str, Any]
+    suggestion: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class RunDetailRead(TaskRunRead):
+    findings: list[FindingRead] = Field(default_factory=list)
+
+
 class JobRead(TimestampedReadModel):
     job_no: str
     trigger_type: str
@@ -60,4 +80,3 @@ class JobRead(TimestampedReadModel):
 
 class JobDetailRead(JobRead):
     runs: list[TaskRunRead] = Field(default_factory=list)
-

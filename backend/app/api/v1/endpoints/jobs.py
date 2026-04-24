@@ -2,14 +2,21 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
-from app.models.job import InspectionJob, InspectionTaskRun
-from app.schemas.job import JobDetailRead, JobRead, ManualJobCreate, TaskRunRead
-from app.services.job_service import cancel_job, create_manual_job, get_job_or_404
+from app.models.job import InspectionJob
+from app.schemas.job import FindingRead, JobDetailRead, JobRead, ManualJobCreate, RunDetailRead, TaskRunRead
+from app.services.job_service import (
+    cancel_job,
+    create_manual_job,
+    execute_job,
+    execute_run,
+    get_job_or_404,
+    get_run_or_404,
+)
 
 router = APIRouter(tags=["jobs"])
 
@@ -49,12 +56,25 @@ async def cancel_job_endpoint(job_id: UUID, session: AsyncSession = Depends(get_
     return JobDetailRead.model_validate(updated_job)
 
 
-@router.get("/runs/{run_id}", response_model=TaskRunRead)
-async def get_run(run_id: UUID, session: AsyncSession = Depends(get_db)) -> TaskRunRead:
-    result = await session.execute(
-        select(InspectionTaskRun).where(InspectionTaskRun.id == run_id)
-    )
-    run = result.scalar_one_or_none()
-    if run is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task run not found")
-    return TaskRunRead.model_validate(run)
+@router.post("/jobs/{job_id}/execute", response_model=JobDetailRead)
+async def execute_job_endpoint(job_id: UUID, session: AsyncSession = Depends(get_db)) -> JobDetailRead:
+    updated_job = await execute_job(session, job_id)
+    return JobDetailRead.model_validate(updated_job)
+
+
+@router.get("/runs/{run_id}", response_model=RunDetailRead)
+async def get_run(run_id: UUID, session: AsyncSession = Depends(get_db)) -> RunDetailRead:
+    run = await get_run_or_404(session, run_id)
+    return RunDetailRead.model_validate(run)
+
+
+@router.post("/runs/{run_id}/execute", response_model=RunDetailRead)
+async def execute_run_endpoint(run_id: UUID, session: AsyncSession = Depends(get_db)) -> RunDetailRead:
+    updated_run = await execute_run(session, run_id)
+    return RunDetailRead.model_validate(updated_run)
+
+
+@router.get("/runs/{run_id}/findings", response_model=list[FindingRead])
+async def list_run_findings(run_id: UUID, session: AsyncSession = Depends(get_db)) -> list[FindingRead]:
+    run = await get_run_or_404(session, run_id)
+    return [FindingRead.model_validate(finding) for finding in run.findings]
