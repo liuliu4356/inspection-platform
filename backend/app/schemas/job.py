@@ -64,6 +64,15 @@ class RunDetailRead(TaskRunRead):
     findings: list[FindingRead] = Field(default_factory=list)
 
 
+class DispatchRead(ORMBaseModel):
+    entity_type: str
+    entity_id: UUID
+    task_id: str
+    queued_at: datetime
+    execution_mode: str
+    queue: str
+
+
 class JobRead(TimestampedReadModel):
     job_no: str
     trigger_type: str

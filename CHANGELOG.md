@@ -6,6 +6,12 @@ The format follows Keep a Changelog and the project uses Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-25
+
+### Added
+- Celery-based asynchronous dispatch endpoints for inspection jobs and task runs.
+- Worker entrypoint and Docker Compose worker service for background execution.
+
 ## [0.2.0] - 2026-04-25
 
 ### Added

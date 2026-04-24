@@ -20,15 +20,22 @@ class Settings(BaseSettings):
         alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://127.0.0.1:6379/0", alias="REDIS_URL")
+    celery_broker_url: str = Field(default="redis://127.0.0.1:6379/0", alias="CELERY_BROKER_URL")
+    celery_result_backend: str = Field(
+        default="redis://127.0.0.1:6379/0",
+        alias="CELERY_RESULT_BACKEND",
+    )
+    celery_task_always_eager: bool = Field(default=False, alias="CELERY_TASK_ALWAYS_EAGER")
+    celery_task_default_queue: str = Field(default="inspection", alias="CELERY_TASK_DEFAULT_QUEUE")
     fernet_key: str = Field(
         default="YvMY4dWbJ9K8Q4p4fiI7T-4vI4D1vS0mTgIYbK0lF5A=",
         alias="FERNET_KEY",
     )
     http_timeout_seconds: int = Field(default=10, alias="HTTP_TIMEOUT_SECONDS")
 
-    @field_validator("debug", mode="before")
+    @field_validator("debug", "celery_task_always_eager", mode="before")
     @classmethod
-    def normalize_debug(cls, value: object) -> bool:
+    def normalize_bool(cls, value: object) -> bool:
         if isinstance(value, bool):
             return value
         if isinstance(value, str):

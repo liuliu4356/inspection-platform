@@ -26,6 +26,12 @@ FastAPI backend scaffold for an automated inspection platform based on Prometheu
    uvicorn app.main:app --reload
    ```
 
+5. Start the Celery worker if you want async execution:
+
+   ```powershell
+   celery -A app.worker worker -l info
+   ```
+
 ## Local infrastructure
 
 From the project root you can start PostgreSQL and Redis with Docker Compose:
@@ -58,9 +64,17 @@ The backend service definition is also included in `docker-compose.yml` if you w
 - `GET /api/v1/jobs/{id}`
 - `GET /api/v1/jobs/{id}/runs`
 - `POST /api/v1/jobs/{id}/execute`
+- `POST /api/v1/jobs/{id}/dispatch`
 - `POST /api/v1/jobs/{id}/cancel`
 - `POST /api/v1/runs/{id}/execute`
+- `POST /api/v1/runs/{id}/dispatch`
 - `GET /api/v1/runs/{id}/findings`
+
+## Execution modes
+
+- `execute` endpoints run inspection immediately in the API process.
+- `dispatch` endpoints enqueue the work through Celery.
+- Set `CELERY_TASK_ALWAYS_EAGER=true` to keep Celery on but execute tasks locally for development smoke tests.
 
 ## Threshold examples
 

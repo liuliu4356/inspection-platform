@@ -8,7 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.models.job import InspectionJob
-from app.schemas.job import FindingRead, JobDetailRead, JobRead, ManualJobCreate, RunDetailRead, TaskRunRead
+from app.schemas.job import (
+    DispatchRead,
+    FindingRead,
+    JobDetailRead,
+    JobRead,
+    ManualJobCreate,
+    RunDetailRead,
+    TaskRunRead,
+)
+from app.services.execution_dispatch import dispatch_job_execution, dispatch_run_execution
 from app.services.job_service import (
     cancel_job,
     create_manual_job,
@@ -62,6 +71,12 @@ async def execute_job_endpoint(job_id: UUID, session: AsyncSession = Depends(get
     return JobDetailRead.model_validate(updated_job)
 
 
+@router.post("/jobs/{job_id}/dispatch", response_model=DispatchRead, status_code=status.HTTP_202_ACCEPTED)
+async def dispatch_job_endpoint(job_id: UUID, session: AsyncSession = Depends(get_db)) -> DispatchRead:
+    dispatch = await dispatch_job_execution(session, job_id)
+    return DispatchRead.model_validate(dispatch)
+
+
 @router.get("/runs/{run_id}", response_model=RunDetailRead)
 async def get_run(run_id: UUID, session: AsyncSession = Depends(get_db)) -> RunDetailRead:
     run = await get_run_or_404(session, run_id)
@@ -72,6 +87,12 @@ async def get_run(run_id: UUID, session: AsyncSession = Depends(get_db)) -> RunD
 async def execute_run_endpoint(run_id: UUID, session: AsyncSession = Depends(get_db)) -> RunDetailRead:
     updated_run = await execute_run(session, run_id)
     return RunDetailRead.model_validate(updated_run)
+
+
+@router.post("/runs/{run_id}/dispatch", response_model=DispatchRead, status_code=status.HTTP_202_ACCEPTED)
+async def dispatch_run_endpoint(run_id: UUID, session: AsyncSession = Depends(get_db)) -> DispatchRead:
+    dispatch = await dispatch_run_execution(session, run_id)
+    return DispatchRead.model_validate(dispatch)
 
 
 @router.get("/runs/{run_id}/findings", response_model=list[FindingRead])
