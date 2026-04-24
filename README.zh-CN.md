@@ -33,7 +33,7 @@
 | 任务创建 + 执行引擎 | ✅ 已完成 | 0.2.0 |
 | 异步调度 (Celery) | ✅ 已完成 | 0.3.0 |
 | **用户认证 + 权限控制** | ✅ **已完成** | **0.4.0** |
-| 定时任务 (Celery Beat) | 📋 计划中 | - |
+| **定时调度 (Celery Beat)** | ✅ **已完成** | **0.5.0** |
 | 报告生成 | 📋 计划中 | - |
 | 告警通知 | 📋 计划中 | - |
 | 前端界面 | 📋 计划中 | - |
@@ -143,6 +143,15 @@ uvicorn app.main:app --reload
 | POST | `/api/v1/runs/{id}/execute` | operator |
 | POST | `/api/v1/runs/{id}/dispatch` | operator |
 | GET | `/api/v1/runs/{id}/findings` | viewer |
+
+### 调度器（v0.5.0）
+
+| 方法 | 端点 | 说明 | 最低角色 |
+|------|------|------|----------|
+| POST | `/api/v1/scheduler/tick` | 手动触发调度检查 | operator |
+
+调度器通过 Celery Beat 每分钟自动运行，检查所有 `schedule_type=cron` 且已启用的规则，
+当 cron 表达式匹配当前时间窗口时自动创建巡检任务。
 
 ### 健康检查
 

@@ -6,6 +6,20 @@ The format follows Keep a Changelog and the project uses Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-25
+
+### Added
+- Celery Beat scheduler for automatic cron-based inspection execution.
+- Scheduler service that evaluates cron expressions via `croniter` and
+  creates inspection jobs for due rules.
+- `POST /api/v1/scheduler/tick` endpoint for manual scheduler trigger.
+- Beat service in Docker Compose for production deployments.
+- Unit tests for croniter parsing and scheduler service logic.
+
+### Changed
+- Celery Beat configured to run `inspection.scheduler_tick` every minute.
+- Routes increased to 35 (added scheduler endpoints).
+
 ## [0.4.1] - 2026-04-25
 
 ### Added

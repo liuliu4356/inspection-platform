@@ -33,7 +33,7 @@ Automated inspection platform for Prometheus metrics and Elasticsearch logs.
 | Job creation + execution engine | ✅ Done | 0.2.0 |
 | Async dispatch (Celery) | ✅ Done | 0.3.0 |
 | **User authentication + RBAC** | ✅ **Done** | **0.4.0** |
-| Scheduled tasks (Celery Beat) | 📋 Planned | - |
+| **Scheduled tasks (Celery Beat)** | ✅ **Done** | **0.5.0** |
 | Report generation | 📋 Planned | - |
 | Alerting / notifications | 📋 Planned | - |
 | Frontend | 📋 Planned | - |
@@ -143,6 +143,16 @@ All API endpoints except `/auth/*`, `/health`, and `/` require authentication.
 | POST | `/api/v1/runs/{id}/execute` | operator |
 | POST | `/api/v1/runs/{id}/dispatch` | operator |
 | GET | `/api/v1/runs/{id}/findings` | viewer |
+
+### Scheduler (v0.5.0)
+
+| Method | Endpoint | Description | Min Role |
+|--------|----------|-------------|----------|
+| POST | `/api/v1/scheduler/tick` | Manually trigger scheduler check | operator |
+
+The scheduler runs automatically every minute via Celery Beat. It checks all
+enabled rules with `schedule_type=cron` and creates inspection jobs when their
+cron expression matches the current time window.
 
 ### Health
 

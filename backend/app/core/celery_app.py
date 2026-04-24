@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 
 from app.core.config import get_settings
 
@@ -8,7 +9,7 @@ celery_app = Celery(
     "inspection_platform",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.tasks.execution"],
+    include=["app.tasks.execution", "app.tasks.scheduler"],
 )
 
 celery_app.conf.update(
@@ -21,4 +22,11 @@ celery_app.conf.update(
     task_always_eager=settings.celery_task_always_eager,
     task_default_queue=settings.celery_task_default_queue,
 )
+
+celery_app.conf.beat_schedule = {
+    "scheduler-every-minute": {
+        "task": "inspection.scheduler_tick",
+        "schedule": crontab(minute="*"),
+    },
+}
 

@@ -45,6 +45,7 @@ services:
       CELERY_TASK_DEFAULT_QUEUE: inspection
       FERNET_KEY: YvMY4dWbJ9K8Q4p4fiI7T-4vI4D1vS0mTgIYbK0lF5A=
       HTTP_TIMEOUT_SECONDS: "10"
+      SECRET_KEY: change-me-to-a-secure-random-key-in-production
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,12 +73,37 @@ services:
       CELERY_TASK_DEFAULT_QUEUE: inspection
       FERNET_KEY: YvMY4dWbJ9K8Q4p4fiI7T-4vI4D1vS0mTgIYbK0lF5A=
       HTTP_TIMEOUT_SECONDS: "10"
+      SECRET_KEY: change-me-to-a-secure-random-key-in-production
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     command: celery -A app.worker worker -l info
+
+  beat:
+    build:
+      context: ./backend
+    container_name: inspection-platform-beat
+    environment:
+      APP_NAME: Inspection Platform API
+      DEBUG: "false"
+      API_V1_PREFIX: /api/v1
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/inspection_platform
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_TASK_ALWAYS_EAGER: "false"
+      CELERY_TASK_DEFAULT_QUEUE: inspection
+      FERNET_KEY: YvMY4dWbJ9K8Q4p4fiI7T-4vI4D1vS0mTgIYbK0lF5A=
+      HTTP_TIMEOUT_SECONDS: "10"
+      SECRET_KEY: change-me-to-a-secure-random-key-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.worker beat -l info
 
 volumes:
   postgres_data:
