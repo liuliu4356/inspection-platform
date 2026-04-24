@@ -6,6 +6,14 @@ The format follows Keep a Changelog and the project uses Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-04-25
+
+### Added
+- Default admin user auto-created on startup (`admin` / `admin123`).
+- Configurable default admin credentials via `DEFAULT_ADMIN_USERNAME` and
+  `DEFAULT_ADMIN_PASSWORD` environment variables.
+- CLI script `scripts/promote_user.py` to promote any user to a given role.
+
 ## [0.4.0] - 2026-04-25
 
 ### Added

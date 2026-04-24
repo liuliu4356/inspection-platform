@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
+    default_admin_username: str = Field(default="admin", alias="DEFAULT_ADMIN_USERNAME")
+    default_admin_password: str = Field(default="admin123", alias="DEFAULT_ADMIN_PASSWORD")
     http_timeout_seconds: int = Field(default=10, alias="HTTP_TIMEOUT_SECONDS")
 
     @field_validator("debug", "celery_task_always_eager", mode="before")
