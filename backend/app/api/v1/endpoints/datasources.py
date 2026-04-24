@@ -7,10 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db, require_role
 from app.core.config import get_settings
 from app.core.crypto import decrypt_json, encrypt_json
 from app.models.datasource import Datasource
+from app.models.user import User
 from app.schemas.datasource import (
     DatasourceCreate,
     DatasourceRead,
@@ -21,6 +22,9 @@ from app.services.datasource_probe import probe_datasource
 
 router = APIRouter(prefix="/datasources", tags=["datasources"])
 settings = get_settings()
+
+_write_access = Depends(require_role(["admin", "operator"]))
+_read_access = Depends(get_current_user)
 
 
 async def _get_datasource_or_404(session: AsyncSession, datasource_id: UUID) -> Datasource:
@@ -33,6 +37,7 @@ async def _get_datasource_or_404(session: AsyncSession, datasource_id: UUID) -> 
 @router.get("", response_model=list[DatasourceRead])
 async def list_datasources(
     session: AsyncSession = Depends(get_db),
+    _: User = _read_access,
 ) -> list[DatasourceRead]:
     result = await session.execute(select(Datasource).order_by(Datasource.created_at.desc()))
     datasources = result.scalars().all()
@@ -43,6 +48,7 @@ async def list_datasources(
 async def create_datasource(
     payload: DatasourceCreate,
     session: AsyncSession = Depends(get_db),
+    current_user: User = _write_access,
 ) -> DatasourceRead:
     datasource = Datasource(
         name=payload.name,
@@ -55,6 +61,7 @@ async def create_datasource(
         idc=payload.idc,
         tags_json=payload.tags,
         enabled=payload.enabled,
+        created_by=current_user.id,
     )
     session.add(datasource)
     await session.commit()
@@ -66,6 +73,7 @@ async def create_datasource(
 async def get_datasource(
     datasource_id: UUID,
     session: AsyncSession = Depends(get_db),
+    _: User = _read_access,
 ) -> DatasourceRead:
     datasource = await _get_datasource_or_404(session, datasource_id)
     return DatasourceRead.model_validate(datasource)
@@ -76,6 +84,7 @@ async def update_datasource(
     datasource_id: UUID,
     payload: DatasourceUpdate,
     session: AsyncSession = Depends(get_db),
+    _: User = _write_access,
 ) -> DatasourceRead:
     datasource = await _get_datasource_or_404(session, datasource_id)
     updates = payload.model_dump(exclude_unset=True)
@@ -106,6 +115,7 @@ async def update_datasource(
 async def delete_datasource(
     datasource_id: UUID,
     session: AsyncSession = Depends(get_db),
+    _: User = _write_access,
 ) -> Response:
     datasource = await _get_datasource_or_404(session, datasource_id)
     await session.delete(datasource)
@@ -117,6 +127,7 @@ async def delete_datasource(
 async def test_datasource(
     datasource_id: UUID,
     session: AsyncSession = Depends(get_db),
+    _: User = _write_access,
 ) -> DatasourceTestResult:
     datasource = await _get_datasource_or_404(session, datasource_id)
     checked_at = datetime.now(UTC)
@@ -131,7 +142,6 @@ async def test_datasource(
             timeout_seconds=settings.http_timeout_seconds,
         )
     except Exception as exc:
-        probe_result = None
         datasource.last_check_status = "failed"
         datasource.last_check_at = checked_at
         await session.commit()
@@ -148,4 +158,3 @@ async def test_datasource(
         checked_at=checked_at,
         details=probe_result.details,
     )
-

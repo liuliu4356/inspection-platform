@@ -31,6 +31,13 @@ class Settings(BaseSettings):
         default="YvMY4dWbJ9K8Q4p4fiI7T-4vI4D1vS0mTgIYbK0lF5A=",
         alias="FERNET_KEY",
     )
+    secret_key: str = Field(
+        default="change-me-to-a-secure-random-key-in-production",
+        alias="SECRET_KEY",
+    )
+    jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
+    access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    refresh_token_expire_days: int = Field(default=7, alias="REFRESH_TOKEN_EXPIRE_DAYS")
     http_timeout_seconds: int = Field(default=10, alias="HTTP_TIMEOUT_SECONDS")
 
     @field_validator("debug", "celery_task_always_eager", mode="before")

@@ -6,6 +6,25 @@ The format follows Keep a Changelog and the project uses Semantic Versioning.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-25
+
+### Added
+- User authentication with JWT access and refresh tokens.
+- Password hashing and verification via bcrypt.
+- User registration, login, and token refresh endpoints.
+- RBAC with default roles: admin, operator, viewer.
+- Authentication dependency (`get_current_user`) for protected endpoints.
+- Role-based access control (`require_role`) for write and execute operations.
+- Automatic `created_by` / `requested_by` population from authenticated user.
+- Default role seeding on application startup.
+- Bilingual project documentation (English and Chinese).
+- Unit tests for password hashing, JWT creation, and token lifecycle.
+
+### Changed
+- All datasource, rule, and job endpoints now require authentication.
+- Write and execute operations require `operator` or `admin` role.
+- Read operations require an authenticated user (`viewer` or above).
+
 ## [0.3.0] - 2026-04-25
 
 ### Added

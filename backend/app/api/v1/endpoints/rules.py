@@ -9,10 +9,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user, get_db, require_role
 from app.models.datasource import Datasource
 from app.models.enums import RuleType
 from app.models.rule import InspectionRule, InspectionRuleVersion
+from app.models.user import User
 from app.schemas.rule import (
     RuleCreate,
     RuleDryRunResult,
@@ -22,6 +23,9 @@ from app.schemas.rule import (
 )
 
 router = APIRouter(prefix="/rules", tags=["rules"])
+
+_write_access = Depends(require_role(["admin", "operator"]))
+_read_access = Depends(get_current_user)
 
 
 async def _get_rule_or_404(session: AsyncSession, rule_id: UUID) -> InspectionRule:
@@ -101,9 +105,14 @@ def _validate_rule_config(rule_type: RuleType, query_config: dict[str, Any]) -> 
 
 
 @router.get("", response_model=list[RuleRead])
-async def list_rules(session: AsyncSession = Depends(get_db)) -> list[RuleRead]:
-    statement = select(InspectionRule).options(selectinload(InspectionRule.versions)).order_by(
-        InspectionRule.created_at.desc()
+async def list_rules(
+    session: AsyncSession = Depends(get_db),
+    _: User = _read_access,
+) -> list[RuleRead]:
+    statement = (
+        select(InspectionRule)
+        .options(selectinload(InspectionRule.versions))
+        .order_by(InspectionRule.created_at.desc())
     )
     result = await session.execute(statement)
     rules = result.scalars().all()
@@ -114,6 +123,7 @@ async def list_rules(session: AsyncSession = Depends(get_db)) -> list[RuleRead]:
 async def create_rule(
     payload: RuleCreate,
     session: AsyncSession = Depends(get_db),
+    current_user: User = _write_access,
 ) -> RuleRead:
     await _ensure_datasource_exists(session, payload.datasource_id)
     _validate_rule_config(payload.rule_type, payload.query_config)
@@ -130,6 +140,7 @@ async def create_rule(
         time_range_type=payload.time_range_type,
         dimension_scope_json=payload.dimension_scope,
         latest_version_no=1,
+        created_by=current_user.id,
     )
     session.add(rule)
     await session.flush()
@@ -150,7 +161,11 @@ async def create_rule(
 
 
 @router.get("/{rule_id}", response_model=RuleRead)
-async def get_rule(rule_id: UUID, session: AsyncSession = Depends(get_db)) -> RuleRead:
+async def get_rule(
+    rule_id: UUID,
+    session: AsyncSession = Depends(get_db),
+    _: User = _read_access,
+) -> RuleRead:
     rule = await _get_rule_or_404(session, rule_id)
     return _to_rule_read(rule)
 
@@ -159,6 +174,7 @@ async def get_rule(rule_id: UUID, session: AsyncSession = Depends(get_db)) -> Ru
 async def list_rule_versions(
     rule_id: UUID,
     session: AsyncSession = Depends(get_db),
+    _: User = _read_access,
 ) -> list[RuleVersionRead]:
     await _get_rule_or_404(session, rule_id)
     result = await session.execute(
@@ -185,6 +201,7 @@ async def update_rule(
     rule_id: UUID,
     payload: RuleUpdate,
     session: AsyncSession = Depends(get_db),
+    _: User = _write_access,
 ) -> RuleRead:
     rule = await _get_rule_or_404(session, rule_id)
     updates = payload.model_dump(exclude_unset=True)
@@ -242,7 +259,11 @@ async def update_rule(
 
 
 @router.delete("/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_rule(rule_id: UUID, session: AsyncSession = Depends(get_db)) -> Response:
+async def delete_rule(
+    rule_id: UUID,
+    session: AsyncSession = Depends(get_db),
+    _: User = _write_access,
+) -> Response:
     rule = await _get_rule_or_404(session, rule_id)
     await session.delete(rule)
     await session.commit()
@@ -250,7 +271,11 @@ async def delete_rule(rule_id: UUID, session: AsyncSession = Depends(get_db)) ->
 
 
 @router.post("/{rule_id}/dry-run", response_model=RuleDryRunResult)
-async def dry_run_rule(rule_id: UUID, session: AsyncSession = Depends(get_db)) -> RuleDryRunResult:
+async def dry_run_rule(
+    rule_id: UUID,
+    session: AsyncSession = Depends(get_db),
+    _: User = _write_access,
+) -> RuleDryRunResult:
     rule = await _get_rule_or_404(session, rule_id)
     latest_version = _latest_version(rule)
     if latest_version is None:
@@ -267,4 +292,3 @@ async def dry_run_rule(rule_id: UUID, session: AsyncSession = Depends(get_db)) -
         threshold_preview=latest_version.threshold_config_json,
         checked_at=datetime.now(UTC),
     )
-
