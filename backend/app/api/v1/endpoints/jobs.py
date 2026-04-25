@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from uuid import UUID
+import uuid
+from datetime import datetime as datetime_ctx
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +29,7 @@ from app.services.job_service import (
     get_job_or_404,
     get_run_or_404,
 )
+from app.services.report_generator import generate_html_report
 
 router = APIRouter(tags=["jobs"])
 
@@ -143,3 +146,16 @@ async def list_run_findings(
 ) -> list[FindingRead]:
     run = await get_run_or_404(session, run_id)
     return [FindingRead.model_validate(finding) for finding in run.findings]
+
+
+@router.get("/jobs/{job_id}/report", response_class=HTMLResponse)
+async def get_job_html_report(
+    job_id: uuid.UUID,
+    session: AsyncSession = Depends(get_db),
+    _: User = _read_access,
+) -> HTMLResponse:
+    try:
+        html = await generate_html_report(session, job_id)
+        return HTMLResponse(content=html)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

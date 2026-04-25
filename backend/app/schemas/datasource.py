@@ -52,6 +52,21 @@ class DatasourceRead(TimestampedReadModel):
     last_check_at: datetime | None
 
 
+class DatasourceMultiCreate(BaseModel):
+    name: str = Field(max_length=128)
+    prometheus_clusters: list[dict[str, str]] = Field(default_factory=list)
+    environment: str | None = None
+    idc: str | None = None
+    tags: dict[str, str] = Field(default_factory=dict)
+    extra_config: dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+
+
+class PrometheusClusterInfo(BaseModel):
+    name: str
+    url: str
+
+
 class DatasourceTestResult(BaseModel):
     datasource_id: UUID
     success: bool

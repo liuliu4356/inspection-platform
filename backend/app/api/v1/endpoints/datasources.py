@@ -14,9 +14,11 @@ from app.models.datasource import Datasource
 from app.models.user import User
 from app.schemas.datasource import (
     DatasourceCreate,
+    DatasourceMultiCreate,
     DatasourceRead,
     DatasourceTestResult,
     DatasourceUpdate,
+    PrometheusClusterInfo,
 )
 from app.services.datasource_probe import probe_datasource
 
@@ -158,3 +160,31 @@ async def test_datasource(
         checked_at=checked_at,
         details=probe_result.details,
     )
+
+
+@router.post("/multi", response_model=DatasourceRead, status_code=status.HTTP_201_CREATED)
+async def create_multi_datasource(
+    payload: DatasourceMultiCreate,
+    session: AsyncSession = Depends(get_db),
+    current_user: User = _write_access,
+) -> DatasourceRead:
+    datasource = Datasource(
+        name=payload.name,
+        type=DatasourceType.prometheus_multi,
+        endpoint=payload.prometheus_clusters[0]["url"] if payload.prometheus_clusters else "",
+        auth_type=AuthType.none,
+        auth_config_encrypted=None,
+        extra_config_json={
+            "clusters": payload.prometheus_clusters,
+            **payload.extra_config,
+        },
+        environment=payload.environment,
+        idc=payload.idc,
+        tags_json=payload.tags,
+        enabled=payload.enabled,
+        created_by=current_user.id,
+    )
+    session.add(datasource)
+    await session.commit()
+    await session.refresh(datasource)
+    return DatasourceRead.model_validate(datasource)

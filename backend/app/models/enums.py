@@ -4,6 +4,7 @@ import enum
 class DatasourceType(str, enum.Enum):
     prometheus = "prometheus"
     elasticsearch = "elasticsearch"
+    prometheus_multi = "prometheus_multi"
 
 
 class AuthType(str, enum.Enum):

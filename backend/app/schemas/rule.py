@@ -10,9 +10,30 @@ from app.schemas.common import TimestampedReadModel
 
 class RuleVersionPayload(BaseModel):
     query_config: dict[str, Any]
-    threshold_config: dict[str, Any]
+    threshold_config: dict[str, Any] = Field(
+        default_factory=lambda: {
+            "thresholds": [
+                {
+                    "name": "默认阈值",
+                    "threshold": 80,
+                    "threshold_type": "greater",
+                    "threshold_status": "warning",
+                    "unit": "%",
+                }
+            ],
+            "labels": {},
+        }
+    )
     expression_text: str | None = None
     change_note: str | None = None
+
+
+class ThresholdConfig(BaseModel):
+    name: str
+    threshold: float
+    threshold_type: str = "greater"
+    threshold_status: str = "warning"
+    unit: str = "%"
 
 
 class RuleBase(BaseModel):
