@@ -1,0 +1,318 @@
+# ELK 巡检配置文件
+# 参考 promAI 设计，支持 YAML 配置化的巡检规则
+
+elk_clusters:
+  - name: "生产环境ES"
+    url: "http://localhost:9200"
+    username: "elastic"
+    password: "elastic"
+    enabled: true
+  - name: "测试环境ES"
+    url: "http://localhost:9201"
+    username: "elastic"
+    password: "elastic"
+    enabled: false
+
+# 巡检定时任务 (Cron 表达式)
+cron_schedule: "0 9,17 * * *"
+
+# 项目名称
+project_name: "ELK 自动化巡检平台"
+
+# 报告清理配置
+report_cleanup:
+  enabled: true
+  max_age: 7  # 保留最近7天的报告
+
+# 通知配置
+notifications:
+  dingtalk:
+    enabled: false
+    webhook: ""
+    secret: ""
+  email:
+    enabled: false
+    smtp_host: ""
+    smtp_port: 465
+    username: ""
+    password: ""
+    from: ""
+    to: []
+  wechat_work:
+    enabled: false
+    webhook: ""
+    report_url: ""
+
+# ELK 巡检指标配置
+metric_types:
+  - type: "L1-集群健康状态"
+    metrics:
+      - name: "Elasticsearch 集群状态"
+        description: "检查集群是否为绿色（所有分片正常）"
+        query: "cluster health"
+        threshold: "green"
+        threshold_type: "equal"
+        threshold_status: "normal"
+        unit: ""
+        labels:
+          cluster: "集群名称"
+      
+      - name: "集群节点数量"
+        description: "检查活动节点数量"
+        query: "cluster number of nodes"
+        threshold: 3
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: ""
+        labels:
+          cluster: "集群名称"
+
+  - type: "L2-节点状态"
+    metrics:
+      - name: "节点健康状态"
+        description: "检查所有节点是否在线"
+        query: "node status"
+        threshold: "true"
+        threshold_type: "equal"
+        threshold_status: "normal"
+        unit: ""
+        labels:
+          node: "节点名称"
+      
+      - name: "节点 JVM 内存使用率"
+        description: "JVM 内存使用率监控"
+        query: "jvm memory used percent"
+        threshold: 85
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "%"
+        labels:
+          node: "节点名称"
+      
+      - name: "节点 CPU 使用率"
+        description: "节点 CPU 使用率监控"
+        query: "process cpu percent"
+        threshold: 80
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "%"
+        labels:
+          node: "节点名称"
+
+  - type: "L3-索引状态"
+    metrics:
+      - name: "索引文档总数"
+        description: "索引文档总数监控"
+        query: "index document count"
+        threshold: 100000000
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: ""
+        labels:
+          index: "索引名称"
+      
+      - name: "索引大小"
+        description: "索引存储大小监控"
+        query: "index store size"
+        threshold: 100
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "GB"
+        labels:
+          index: "索引名称"
+      
+      - name: "索引分片状态"
+        description: "检查索引分片是否全部健康"
+        query: "index shards"
+        threshold: "started"
+        threshold_type: "equal"
+        threshold_status: "normal"
+        unit: ""
+        labels:
+          index: "索引名称"
+          primary: "主分片"
+          replica: "副本分片"
+
+  - type: "L4-分片状态"
+    metrics:
+      - name: "未分配分片"
+        description: "检查是否有未分配的分片"
+        query: "cluster pending tasks"
+        threshold: 0
+        threshold_type: "equal"
+        threshold_status: "normal"
+        unit: ""
+        labels:
+          cluster: "集群名称"
+      
+      - name: "初始化中分片"
+        description: "检查是否有正在初始化的分片"
+        query: "cluster initializing shards"
+        threshold: 0
+        threshold_type: "equal"
+        threshold_status: "normal"
+        unit: ""
+
+      - name: "重新分配中分片"
+        description: "检查是否有正在重新分配的分片"
+        query: "cluster relocating shards"
+        threshold: 0
+        threshold_type: "equal"
+        threshold_status: "normal"
+        unit: ""
+
+  - type: "L5-JVM 状态"
+    metrics:
+      - name: "JVM 堆内存使用率"
+        description: "JVM 堆内存使用率"
+        query: "jvm heap used percent"
+        threshold: 85
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "%"
+        labels:
+          node: "节点名称"
+      
+      - name: "JVM 线程数"
+        description: "JVM 活动线程数"
+        query: "jvm threads count"
+        threshold: 500
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: ""
+        labels:
+          node: "节点名称"
+      
+      - name: "JVM GC 频率"
+        description: "JVM GC 频率监控"
+        query: "jvm gc collection count"
+        threshold: 100
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "次"
+        labels:
+          node: "节点名称"
+
+  - type: "L6-搜索性能"
+    metrics:
+      - name: "搜索延迟 P95"
+        description: "搜索请求 P95 延迟"
+        query: "search latency p95"
+        threshold: 5
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "s"
+        labels:
+          node: "节点名称"
+      
+      - name: "索引延迟 P95"
+        description: "索引请求 P95 延迟"
+        query: "indexing latency p95"
+        threshold: 5
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "s"
+        labels:
+          node: "节点名称"
+      
+      - name: "搜索请求数"
+        description: "每秒搜索请求数"
+        query: "search qps"
+        threshold: 10000
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "qps"
+
+  - type: "L7-写入性能"
+    metrics:
+      - name: "写入速率"
+        description: "文档写入速率"
+        query: "indexing qps"
+        threshold: 50000
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "qps"
+      
+      - name: "刷新频率"
+        description: "索引刷新频率"
+        query: "flush total"
+        threshold: 1
+        threshold_type: "greater"
+        threshold_status: "normal"
+        unit: ""
+      
+      - name: "合并操作"
+        description: "段合并操作监控"
+        query: "merge operations"
+        threshold: 10
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: ""
+
+  - type: "L8-连接状态"
+    metrics:
+      - name: "HTTP 连接数"
+        description: "当前 HTTP 连接数"
+        query: "http current open"
+        threshold: 1000
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: ""
+      
+      - name: "TCP 连接数"
+        description: "当前 TCP 连接数"
+        query: "transport server open"
+        threshold: 500
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: ""
+
+  - type: "L9-错误日志"
+    metrics:
+      - name: "错误日志数量"
+        description: "最近错误日志数量"
+        query: "error logs count"
+        threshold: 0
+        threshold_type: "equal"
+        threshold_status: "normal"
+        unit: ""
+        search_index: ".logs-*-error"
+      
+      - name: "拒绝请求数"
+        description: "被拒绝的请求数量"
+        query: "thread pool rejected"
+        threshold: 0
+        threshold_type: "equal"
+        threshold_status: "normal"
+        unit: ""
+      
+      - name: "队列等待数"
+        description: "等待队列中的请求数"
+        query: "thread pool queued"
+        threshold: 100
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: ""
+
+  - type: "L10-系统资源"
+    metrics:
+      - name: "磁盘使用率"
+        description: "磁盘空间使用率"
+        query: "disk usage percent"
+        threshold: 85
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "%"
+        labels:
+          node: "节点名称"
+          mount: "挂载点"
+      
+      - name: "文件描述符使用率"
+        description: "文件描述符使用率"
+        query: "open file descriptor percent"
+        threshold: 85
+        threshold_type: "greater"
+        threshold_status: "warning"
+        unit: "%"
+        labels:
+          node: "节点名称"

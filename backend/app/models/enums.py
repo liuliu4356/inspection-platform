@@ -5,6 +5,7 @@ class DatasourceType(str, enum.Enum):
     prometheus = "prometheus"
     elasticsearch = "elasticsearch"
     prometheus_multi = "prometheus_multi"
+    elk = "elk"
 
 
 class AuthType(str, enum.Enum):
